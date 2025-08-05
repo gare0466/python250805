@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Tetris Game</title>
+  <style>
+    body { background: #222; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    #container { display: flex; align-items: flex-start; }
+    #side {
+      margin-right: 20px;
+      color: #fff;
+      font-size: 1.1em;
+      text-align: center;
+      min-width: 120px;
+    }
+    #next-block-canvas {
+      background: #111;
+      border: 2px solid #fff;
+      display: block;
+      margin: 0 auto 10px auto;
+    }
+    #score { margin-bottom: 20px; }
+    canvas { background: #111; display: block; border: 2px solid #fff; }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="side">
+      <div id="score">Score: 0</div>
+      <div>다음 블럭</div>
+      <canvas id="next-block-canvas" width="90" height="90"></canvas>
+    </div>
+    <canvas id="tetris" width="300" height="600"></canvas>
+  </div>
+  <script>
+    const canvas = document.getElementById('tetris');
+    const ctx = canvas.getContext('2d');
+    const scoreElem = document.getElementById('score');
+    const nextCanvas = document.getElementById('next-block-canvas');
+    const nextCtx = nextCanvas.getContext('2d');
+    const COLS = 10, ROWS = 20, BLOCK = 30;
+    const COLORS = [
+      null, '#0ff', '#ff0', '#800080', '#00f', '#ffa500', '#0f0', '#f00'
+    ];
+    const SHAPES = [
+      [], // 0번은 사용하지 않음
+      [[1,1,1,1]], // I
+      [[1,1],[1,1]], // O
+      [[0,1,0],[1,1,1]], // T
+      [[1,0,0],[1,1,1]], // J
+      [[0,0,1],[1,1,1]], // L
+      [[1,1,0],[0,1,1]], // S
+      [[0,1,1],[1,1,0]]  // Z
+    ];
+
+    function randomTetromino() {
+      const type = Math.floor(Math.random() * 7) + 1;
+      return {
+        type,
+        shape: SHAPES[type].map(row => [...row]),
+        x: Math.floor(COLS / 2) - Math.ceil(SHAPES[type][0].length / 2),
+        y: 0
+      };
+    }
+
+    function rotate(shape) {
+      return shape[0].map((_, i) => shape.map(row => row[i])).reverse();
+    }
+
+    let board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+    let tetromino = randomTetromino();
+    let nextTetromino = randomTetromino();
+    let score = 0;
+    let dropInterval = 500;
+    let lastDrop = Date.now();
+
+    function drawBlock(x, y, color, ctxObj=ctx, blockSize=BLOCK) {
+      ctxObj.fillStyle = color;
+      ctxObj.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
+      ctxObj.strokeStyle = '#333';
+      ctxObj.strokeRect(x * blockSize, y * blockSize, blockSize, blockSize);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Draw board
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          if (board[y][x]) drawBlock(x, y, COLORS[board[y][x]]);
+        }
+      }
+      // Draw tetromino
+      for (let y = 0; y < tetromino.shape.length; y++) {
+        for (let x = 0; x < tetromino.shape[y].length; x++) {
+          if (tetromino.shape[y][x]) {
+            drawBlock(tetromino.x + x, tetromino.y + y, COLORS[tetromino.type]);
+          }
+        }
+      }
+      drawNextBlock();
+    }
+
+    function drawNextBlock() {
+      nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+      const shape = nextTetromino.shape;
+      const color = COLORS[nextTetromino.type];
+      const blockSize = 22;
+      // 중앙 정렬 계산
+      const offsetX = Math.floor((nextCanvas.width - shape[0].length * blockSize) / 2);
+      const offsetY = Math.floor((nextCanvas.height - shape.length * blockSize) / 2);
+      for (let y = 0; y < shape.length; y++) {
+        for (let x = 0; x < shape[y].length; x++) {
+          if (shape[y][x]) {
+            nextCtx.fillStyle = color;
+            nextCtx.fillRect(offsetX + x * blockSize, offsetY + y * blockSize, blockSize, blockSize);
+            nextCtx.strokeStyle = '#fff';
+            nextCtx.strokeRect(offsetX + x * blockSize, offsetY + y * blockSize, blockSize, blockSize);
+          }
+        }
+      }
+    }
+
+    function valid(dx=0, dy=0, shape=tetromino.shape) {
+      for (let y = 0; y < shape.length; y++) {
+        for (let x = 0; x < shape[y].length; x++) {
+          if (shape[y][x]) {
+            let nx = tetromino.x + x + dx;
+            let ny = tetromino.y + y + dy;
+            if (nx < 0 || nx >= COLS || ny >= ROWS) return false;
+            if (ny >= 0 && board[ny][nx]) return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function merge() {
+      for (let y = 0; y < tetromino.shape.length; y++) {
+        for (let x = 0; x < tetromino.shape[y].length; x++) {
+          if (tetromino.shape[y][x]) {
+            let nx = tetromino.x + x;
+            let ny = tetromino.y + y;
+            if (ny >= 0) board[ny][nx] = tetromino.type;
+          }
+        }
+      }
+    }
+
+    function clearLines() {
+      let lines = 0;
+      outer: for (let y = ROWS - 1; y >= 0; y--) {
+        for (let x = 0; x < COLS; x++) {
+          if (!board[y][x]) continue outer;
+        }
+        board.splice(y, 1);
+        board.unshift(Array(COLS).fill(0));
+        lines++;
+        y++;
+      }
+      score += lines * 100;
+      scoreElem.textContent = 'Score: ' + score;
+    }
+
+    function drop() {
+      if (valid(0, 1)) {
+        tetromino.y++;
+      } else {
+        merge();
+        clearLines();
+        tetromino = nextTetromino;
+        nextTetromino = randomTetromino();
+        if (!valid()) {
+          alert('Game Over!\n점수: ' + score);
+          board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+          score = 0;
+          scoreElem.textContent = 'Score: 0';
+          tetromino = randomTetromino();
+          nextTetromino = randomTetromino();
+        }
+      }
+      draw();
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft' && valid(-1, 0)) tetromino.x--;
+      else if (e.key === 'ArrowRight' && valid(1, 0)) tetromino.x++;
+      else if (e.key === 'ArrowDown' && valid(0, 1)) tetromino.y++;
+      else if (e.key === 'ArrowUp') {
+        const newShape = rotate(tetromino.shape);
+        if (valid(0, 0, newShape)) tetromino.shape = newShape;
+      }
+      else if (e.key === 'Enter') {
+        // 엔터키: 바닥까지 즉시 떨어뜨림
+        while (valid(0, 1)) {
+          tetromino.y++;
+        }
+        drop();
+      }
+      draw();
+    });
+
+    function loop() {
+      if (Date.now() - lastDrop > dropInterval) {
+        drop();
+        lastDrop = Date.now();
+      }
+      requestAnimationFrame(loop);
+    }
+
+    draw();
+    loop();
+  </script>
+</body>
+</html>

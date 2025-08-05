@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>벽돌깨기 게임</title>
+  <style>
+    body { background: #222; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    #score { color: #fff; text-align: center; font-size: 1.2em; margin-bottom: 10px; }
+    canvas { background: #111; display: block; border: 2px solid #fff; }
+  </style>
+</head>
+<body>
+  <div>
+    <div id="score">Score: 0</div>
+    <canvas id="game" width="400" height="500"></canvas>
+  </div>
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreElem = document.getElementById('score');
+    const WIDTH = canvas.width, HEIGHT = canvas.height;
+
+    // Paddle
+    const paddle = {
+      w: 80, h: 12,
+      x: WIDTH / 2 - 40,
+      y: HEIGHT - 30,
+      dx: 0,
+      speed: 7
+    };
+
+    // Ball
+    const ball = {
+      x: WIDTH / 2,
+      y: HEIGHT - 50,
+      r: 8,
+      dx: 4,
+      dy: -4
+    };
+
+    // Bricks
+    const brickRow = 5, brickCol = 8;
+    const brickW = 45, brickH = 18, brickPadding = 8, brickOffsetTop = 40, brickOffsetLeft = 20;
+    let bricks = [];
+    let score = 0;
+
+    function initBricks() {
+      bricks = [];
+      for (let r = 0; r < brickRow; r++) {
+        bricks[r] = [];
+        for (let c = 0; c < brickCol; c++) {
+          bricks[r][c] = { x: 0, y: 0, status: 1 };
+        }
+      }
+    }
+    initBricks();
+
+    function drawBricks() {
+      for (let r = 0; r < brickRow; r++) {
+        for (let c = 0; c < brickCol; c++) {
+          if (bricks[r][c].status) {
+            let x = c * (brickW + brickPadding) + brickOffsetLeft;
+            let y = r * (brickH + brickPadding) + brickOffsetTop;
+            bricks[r][c].x = x;
+            bricks[r][c].y = y;
+            ctx.fillStyle = "#0ff";
+            ctx.fillRect(x, y, brickW, brickH);
+            ctx.strokeStyle = "#fff";
+            ctx.strokeRect(x, y, brickW, brickH);
+          }
+        }
+      }
+    }
+
+    function drawPaddle() {
+      ctx.fillStyle = "#ffa500";
+      ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
+    }
+
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      ctx.fillStyle = "#f00";
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, WIDTH, HEIGHT);
+      drawBricks();
+      drawPaddle();
+      drawBall();
+    }
+
+    function collisionDetection() {
+      for (let r = 0; r < brickRow; r++) {
+        for (let c = 0; c < brickCol; c++) {
+          let b = bricks[r][c];
+          if (b.status) {
+            if (
+              ball.x > b.x &&
+              ball.x < b.x + brickW &&
+              ball.y > b.y &&
+              ball.y < b.y + brickH
+            ) {
+              ball.dy = -ball.dy;
+              b.status = 0;
+              score += 10;
+              scoreElem.textContent = "Score: " + score;
+              if (score === brickRow * brickCol * 10) {
+                alert("축하합니다! 게임 클리어!");
+                document.location.reload();
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function update() {
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      // 벽 충돌
+      if (ball.x + ball.r > WIDTH || ball.x - ball.r < 0) ball.dx = -ball.dx;
+      if (ball.y - ball.r < 0) ball.dy = -ball.dy;
+
+      // 패들 충돌
+      if (
+        ball.x > paddle.x &&
+        ball.x < paddle.x + paddle.w &&
+        ball.y + ball.r > paddle.y &&
+        ball.y - ball.r < paddle.y + paddle.h
+      ) {
+        ball.dy = -ball.dy;
+        ball.y = paddle.y - ball.r;
+      }
+
+      // 바닥에 닿으면 게임 오버
+      if (ball.y + ball.r > HEIGHT) {
+        alert("게임 오버!");
+        document.location.reload();
+      }
+
+      // 패들 이동
+      paddle.x += paddle.dx;
+      if (paddle.x < 0) paddle.x = 0;
+      if (paddle.x + paddle.w > WIDTH) paddle.x = WIDTH - paddle.w;
+
+      collisionDetection();
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowLeft") paddle.dx = -paddle.speed;
+      else if (e.key === "ArrowRight") paddle.dx = paddle.speed;
+    });
+    document.addEventListener("keyup", e => {
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") paddle.dx = 0;
+    });
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>
