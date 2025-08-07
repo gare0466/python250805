@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>HTML5 & CSS3 데모 페이지</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(120deg, #e0eafc, #cfdef3);
+      margin: 0;
+      padding: 0;
+    }
+    header, footer {
+      background: #3f51b5;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    nav {
+      background: #7986cb;
+      padding: 0.5rem;
+      text-align: center;
+    }
+    nav a {
+      color: white;
+      margin: 0 1rem;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    main {
+      max-width: 700px;
+      margin: 2rem auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 2rem;
+    }
+    section {
+      margin-bottom: 2rem;
+    }
+    button {
+      background: #3f51b5;
+      color: white;
+      border: none;
+      padding: 0.7rem 1.5rem;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #283593;
+    }
+    .output {
+      margin-top: 1rem;
+      font-weight: bold;
+      color: #3f51b5;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>HTML5 & CSS3 데모 페이지</h1>
+    <p>HTML5 태그와 CSS3, 자바스크립트 예제</p>
+  </header>
+  <nav>
+    <a href="#intro">소개</a>
+    <a href="#form">폼</a>
+    <a href="#js-demo">JS 데모</a>
+  </nav>
+  <main>
+    <section id="intro">
+      <h2>HTML5 소개</h2>
+      <article>
+        <p>
+          HTML5는 웹 페이지를 구조화하기 위한 최신 표준입니다.<br>
+          시맨틱 태그, 멀티미디어, 폼, API 등 다양한 기능을 제공합니다.
+        </p>
+        <figure>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/6/61/HTML5_logo_and_wordmark.svg" alt="HTML5 로고" width="120">
+          <figcaption>HTML5 공식 로고</figcaption>
+        </figure>
+      </article>
+    </section>
+    <section id="form">
+      <h2>폼 예제</h2>
+      <form>
+        <label for="name">이름:</label>
+        <input type="text" id="name" name="name" required>
+        <label for="email">이메일:</label>
+        <input type="email" id="email" name="email" required>
+        <button type="submit">제출</button>
+      </form>
+    </section>
+    <section id="js-demo">
+      <h2>자바스크립트 데모</h2>
+      <p>아래 버튼을 클릭하면 현재 시간을 보여줍니다.</p>
+      <button onclick="showTime()">현재 시간 보기</button>
+      <div class="output" id="time-output"></div>
+    </section>
+  </main>
+  <footer>
+    &copy; 2025 HTML5 데모. 모든 권리 보유.
+  </footer>
+  <script>
+    // 간단한 자바스크립트: 현재 시간 표시
+    function showTime() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString();
+      document.getElementById('time-output').textContent = '현재 시간: ' + timeStr;
+    }
+    // 폼 제출 시 새로고침 방지
+    document.querySelector('form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      alert('폼이 제출되었습니다!');
+    });
+  </script>
